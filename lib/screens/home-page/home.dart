@@ -30,27 +30,24 @@ class _HomeState extends State<Home> {
   SharedPreferences prefs;
   String email;
   String displayName;
-  final List<Category> _categories = <Category>[];
-  List _products = [];
-  List _masterData = [];
-  List allCat = [];
-  CatService catService;
-  List<CatService> finalList = new List<CatService>();
-  List<ProductService> productList = new List<ProductService>();
-  List<List<ProductService>> finalProductList =
-      new List<List<ProductService>>();
-  List<int> index = new List<int>();
+
+  List<ProductService> productList;
+  List<ProductService> filteredProducts;
+  List<ProductService> agricultureProducts;
+  List<ProductService> bankProduct;
+  List<ProductService> bookRental;
 
   bool isError = false;
 
   void initState() {
     email = widget.email;
     displayName = widget.displayName;
-    // _fetchProducts();
-    fetchCats();
-    setState(() {
-      this.getData();
-    });
+   
+      this.getAccountingData();
+      this.getAgricultureData();
+      this.getBankingData();
+      
+  
     super.initState();
   }
 
@@ -59,111 +56,56 @@ class _HomeState extends State<Home> {
     super.dispose();
   }
 
-  Future<List<CatService>> getData() async {
-    var res = await http.get(consts.url +
-        "/wc/v3/products/categories?" +
-        consts.ck +
-        "&" +
-        consts.cs);
-    print(res.body);
+
+
+  Future<void> getAccountingData() async {
+    var res =await http.get(
+        "https://bookabook.co.za/wp-json/wc/v3/products?per_page=100&consumer_key=ck_34efa34549443c3706b49f8525947961737748e5&consumer_secret=cs_5a3a24bff0ed2e8c66c8d685cb73680090a44f75&page=1&category=127");
 
     var data = json.decode(res.body);
     var list = data as List;
     print(list);
-    List<CatService> finalListinner =
-        list.map<CatService>((json) => CatService.fromJson(json)).toList();
-
-        for(int i =0;i<finalListinner.length;i++){
-          if(finalListinner[i].count!=0){
-            finalList.add(finalListinner[i]);
-          }
-        }
-
-    for (int i = 0; i < finalList.length; i++) {
-      productList = new List<ProductService>();
-      var res = await http.get(consts.url +
-          "/wc/v3/products?category=" +
-          finalList[i].catId.toString() +
-          "&" +
-          consts.ck +
-          "&" +
-          consts.cs);
-
-      var data = json.decode(res.body);
-      var list = data as List;
+    setState(() {
       productList = list
           .map<ProductService>((json) => ProductService.fromJson(json))
           .toList();
-      setState(() {
-        index.add(productList.length);
-        finalProductList.add(productList);
-      });
-    }
-    
-    return finalList;
+
+      filteredProducts =
+          productList.where((data) => data.stockStatus == "instock").toList();
+    });
   }
 
-  Future<void> fetchCats() async {
-    final List<Category> categories = await catController.fetchCats();
-    if (categories != null) {
-      setState(() => _categories.addAll(categories));
-    } else {
-      setState(() => isError = true);
-    }
-  }
+  Future<void> getAgricultureData() async {
+    var res = await http.get(
+        "https://bookabook.co.za/wp-json/wc/v3/products?per_page=100&consumer_key=ck_34efa34549443c3706b49f8525947961737748e5&consumer_secret=cs_5a3a24bff0ed2e8c66c8d685cb73680090a44f75&page=1&category=139");
 
-  // Future<void> _fetchProducts() async {
-  //   List products = await catController.fetchProducts();
-  //   setState(() => _products = products);
-  //   print(_products);
-  //   await uniqueList(_products);
-  // }
-
-  uniqueList(List list) async {
-    print('called');
-    final List unique = [];
-    for (var i = 0; i < list.length; i++) {
-      if (!unique.contains(list[i]['categories'][0]['name'])) {
-        unique.add(list[i]['categories'][0]['name']);
-      }
-      // print(list[i]['categories'][0]['name']);
-    }
-
-    // setState(() {
-    //   if (_categories == null) {
-    //     _categories = unique;
-    //   } else {
-    //     _categories.addAll(unique);
-    //   }
-    // });
-    finalComp();
-  }
-
-  finalComp() async {
-    List masterData = [];
-    final List temp = [];
-    for (int i = 0; i < _categories.length; i++) {
-      for (int j = 0; j < _products.length; j++) {
-        if (_categories[i] == _products[j]['categories'][0]['name']) {
-          temp.add(_products[j]);
-        }
-
-        // print(temp);
-      }
-
-      Map jsonMap = {_categories[i]: temp};
-      // print(jsonMap);
-      masterData.add(jsonMap);
-      // print(masterData);
-      // temp.clear();
-    }
+    var data = json.decode(res.body);
+    var list = data as List;
 
     setState(() {
-      if (_masterData.isEmpty) {
-        _masterData = masterData;
-      } else {
-        _masterData.addAll(masterData);
-      }
+      productList = list
+          .map<ProductService>((json) => ProductService.fromJson(json))
+          .toList();
+
+      bookRental =
+          productList.where((data) => data.stockStatus == "instock").toList();
+    });
+  }
+
+  Future<void> getBankingData() async {
+    var res = await http.get(
+        "https://bookabook.co.za/wp-json/wc/v3/products?per_page=100&consumer_key=ck_34efa34549443c3706b49f8525947961737748e5&consumer_secret=cs_5a3a24bff0ed2e8c66c8d685cb73680090a44f75&page=1&category=1718");
+
+    var data = json.decode(res.body);
+    var list = data as List;
+
+    setState(() {
+      productList = list
+          .map<ProductService>((json) => ProductService.fromJson(json))
+          .toList();
+
+      bankProduct =
+          productList.where((data) => data.stockStatus == "instock").toList();
     });
   }
 
@@ -182,13 +124,6 @@ class _HomeState extends State<Home> {
                 style: TextStyle(fontSize: 40.0),
               ),
             )),
-        Column(
-          children: _categories.map<Widget>((item) {
-            return ListTile(
-              title: Text(item.name),
-            );
-          }).toList(),
-        ),
         ListTile(
           title: Text('Logout'),
           onTap: () async {
@@ -219,28 +154,20 @@ class _HomeState extends State<Home> {
         onPressed: () {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-            // sets the background color of the `BottomNavigationBar`
-            canvasColor: Color(0xFFFF900F),
-            // sets the active color of the `BottomNavigationBar` if `Brightness` is light
-            primaryColor: Colors.red,
-            textTheme: Theme.of(context)
-                .textTheme
-                .copyWith(caption: new TextStyle(color: Colors.white30))),
-        child: new BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          fixedColor: Colors.white,
-          items: [
-            new BottomNavigationBarItem(
-                title: new Text(''), icon: new Icon(Icons.home)),
-            new BottomNavigationBarItem(
-                title: new Text(''), icon: new Icon(Icons.notifications)),
-            new BottomNavigationBarItem(
-                title: new Text(''), icon: new Icon(Icons.search)),
-            new BottomNavigationBarItem(
-                title: new Text(''), icon: new Icon(Icons.person))
-          ],
+      bottomNavigationBar: BottomAppBar(
+        shape: CircularNotchedRectangle(),
+        color: Color(0xFFFF900F),
+        child: new Container(
+          height: MediaQuery.of(context).size.height / 17,
+          child: new Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              new Icon(Icons.home),
+              new Icon(Icons.home),
+              new Icon(Icons.home),
+              new Icon(Icons.home),
+            ],
+          ),
         ),
       ),
       appBar: new AppBar(
@@ -270,111 +197,283 @@ class _HomeState extends State<Home> {
         centerTitle: false,
       ),
       drawer: Drawer(child: navBarBuilder(context)),
-      body: 
-      finalProductList != null
-          ? listBuilder(context, finalList, finalProductList)
-          : Center(child: CircularProgressIndicator()),
+      body: !(agricultureProducts == null)
+          ? productListBuilder(context)
+          : new Center(child: new CircularProgressIndicator()),
     );
   }
 
-  Widget listBuilder(BuildContext context, List<CatService> categories,
-      List<List<ProductService>> products) {
-    return Container(
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: categories.length,
-        itemBuilder: (context, i) {
-          return Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(categories[i].catName),
-                  ),
-                  Text("See All"),
-                ],
-              ),
-              SingleChildScrollView(
-                
-                scrollDirection: Axis.horizontal,
-                child: new Container(
-                  height: 200.0,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    padding: new EdgeInsets.all(8.0),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: index[i],
-                    itemBuilder: (context, j) {
-                      return index != null?Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.all(18.0),
-                            child: Container(
-                              height: 200.0,
-                              width: 200.0,
-                              color: Colors.blue,
-                              child: Text(finalProductList[i][j].name),
-                            ),
-                          ),
-                        ],
-                      ):new CircularProgressIndicator();
-                    },
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget homeBodybuilder(BuildContext context) {
+  Widget productListBuilder(BuildContext context) {
     return SingleChildScrollView(
-      child: Column(
-        children: <Widget>[listBuilder(context, finalList, finalProductList)],
-      ),
-    );
-  }
-
-  Widget _buildCarousel(context, index, List<Product> data) {
-    // var cat = _categories[index];
-    // print(_masterData[index][cat].length);
-    // List data = _masterData[index][cat];
-    String imgUrl =
-        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJftYqJsvhphX6OOjKMjbwllPKR70rAjXcpsP3tQ8XM7-tqRm4';
-    return CarouselSlider(
-        height: 250,
-        items: data.map((item) {
-          // if (item['images'].isNotEmpty) {
-          //   imgUrl = item['images'][0]['src'];
-          // }
-          return Card(
-            child: Column(
-              // mainAxisAlignment: MainAxisAlignment.start,
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          children: <Widget>[
+            new Row(
               children: <Widget>[
-                FittedBox(
-                  fit: BoxFit.fitHeight,
-                  child: FadeInImage(
-                    height: 150,
-                    width: 200,
-                    image: item.images.isEmpty
-                        ? CachedNetworkImageProvider(imgUrl)
-                        : CachedNetworkImageProvider(item.images[0]['src']),
-                    // fit: BoxFit.cover,
-                    placeholder: AssetImage('res/placeholder.jpg'),
+                Expanded(
+                  child: new Text(
+                    'Accounting',
+                    style:
+                        TextStyle(fontSize: 20.0, fontWeight: FontWeight.w600),
                   ),
                 ),
-                ListTile(
-                  title: Text(
-                    item.name,
-                    softWrap: true,
-                  ),
-                )
+                Container(
+                    decoration: new BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          new BoxShadow(
+                            color: Colors.black45,
+                            offset: new Offset(1.0, 1.0),
+                            blurRadius: 6.0,
+                          )
+                        ],
+                        borderRadius: new BorderRadius.circular(50.0),
+                        border: new Border.all(color: Color(0xFFFF900F))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text('See All'),
+                    ))
               ],
             ),
-          );
-        }).toList());
+            !(filteredProducts == null)
+                ? new Container(
+                    height: 250.0,
+                    child: new ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: filteredProducts.length,
+                      itemBuilder: (context, i) {
+                        return Column(
+                          children: <Widget>[
+                            Container(
+                              height: 200.0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: new Container(
+                                  width: 130.0,
+                                  decoration: new BoxDecoration(
+                                      boxShadow: [
+                                        new BoxShadow(
+                                          color: Colors.black45,
+                                          offset: new Offset(1.0, 1.0),
+                                          blurRadius: 4.0,
+                                        )
+                                      ],
+                                      borderRadius:
+                                          new BorderRadius.circular(15.0),
+                                      image: new DecorationImage(
+                                          fit: BoxFit.cover,
+                                          image: new NetworkImage(
+                                              filteredProducts[i]
+                                                  .images[0]
+                                                  .src))),
+                                ),
+                              ),
+                            ),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  filteredProducts[i].name,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15.0),
+                                )),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  filteredProducts[i].price,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18.0),
+                                ))
+                          ],
+                        );
+                      },
+                    ),
+                  )
+                : new CircularProgressIndicator(),
+            new Row(
+              children: <Widget>[
+                Expanded(
+                  child: new Text(
+                    'Auditing',
+                    style:
+                        TextStyle(fontSize: 20.0, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Container(
+                    decoration: new BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          new BoxShadow(
+                            color: Colors.black45,
+                            offset: new Offset(1.0, 1.0),
+                            blurRadius: 6.0,
+                          )
+                        ],
+                        borderRadius: new BorderRadius.circular(50.0),
+                        border: new Border.all(color: Color(0xFFFF900F))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text('See All'),
+                    ))
+              ],
+            ),
+            !(agricultureProducts == null)
+                ? new Container(
+                    height: 250.0,
+                    child: new ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: agricultureProducts.length,
+                      itemBuilder: (context, i) {
+                        return Column(
+                          children: <Widget>[
+                            Container(
+                              height: 200.0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: new Container(
+                                  width: 130.0,
+                                  decoration: new BoxDecoration(
+                                      boxShadow: [
+                                        new BoxShadow(
+                                          color: Colors.black45,
+                                          offset: new Offset(1.0, 1.0),
+                                          blurRadius: 4.0,
+                                        )
+                                      ],
+                                      borderRadius:
+                                          new BorderRadius.circular(15.0),
+                                      image: new DecorationImage(
+                                          fit: BoxFit.cover,
+                                          image: new NetworkImage(
+                                              agricultureProducts[i]
+                                                  .images[0]
+                                                  .src))),
+                                ),
+                              ),
+                            ),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  agricultureProducts[i].name,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15.0),
+                                )),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  agricultureProducts[i].price,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18.0),
+                                ))
+                          ],
+                        );
+                      },
+                    ),
+                  )
+                : new CircularProgressIndicator(),
+            new Row(children: <Widget>[
+              Expanded(
+                child: new Text(
+                  'Banking',
+                  style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Container(
+                  decoration: new BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        new BoxShadow(
+                          color: Colors.black45,
+                          offset: new Offset(1.0, 1.0),
+                          blurRadius: 6.0,
+                        )
+                      ],
+                      borderRadius: new BorderRadius.circular(50.0),
+                      border: new Border.all(color: Color(0xFFFF900F))),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text('See All'),
+                  ))
+            ]),
+            !(bankProduct == null)
+                ? new Container(
+                    height: 250.0,
+                    child: new ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: bankProduct.length,
+                      itemBuilder: (context, i) {
+                        return Column(
+                          children: <Widget>[
+                            Container(
+                              height: 200.0,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: new Container(
+                                  width: 130.0,
+                                  decoration: new BoxDecoration(
+                                      boxShadow: [
+                                        new BoxShadow(
+                                          color: Colors.black45,
+                                          offset: new Offset(1.0, 1.0),
+                                          blurRadius: 4.0,
+                                        )
+                                      ],
+                                      borderRadius:
+                                          new BorderRadius.circular(15.0),
+                                      image: new DecorationImage(
+                                          fit: BoxFit.cover,
+                                          image: new NetworkImage(
+                                              bankProduct[i].images[0].src))),
+                                ),
+                              ),
+                            ),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  bankProduct[i].name,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15.0),
+                                )),
+                            Container(
+                                width: 140.0,
+                                child: new Text(
+                                  bankProduct[i].price,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: new TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 18.0),
+                                ))
+                          ],
+                        );
+                      },
+                    ),
+                  )
+                : new CircularProgressIndicator(),
+                          ],
+        ),
+      ),
+    );
   }
 }
